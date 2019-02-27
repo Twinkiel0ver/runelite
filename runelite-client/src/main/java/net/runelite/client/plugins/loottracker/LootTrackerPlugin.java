@@ -29,12 +29,7 @@ import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,20 +39,9 @@ import javax.swing.SwingUtilities;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.SpriteID;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.ConfigChanged;
-import net.runelite.api.events.SessionClose;
-import net.runelite.api.events.SessionOpen;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
@@ -121,6 +105,9 @@ public class LootTrackerPlugin extends Plugin
 	private NavigationButton navButton;
 	private String eventType;
 
+
+	private UUID lastUUID;
+
 	private List<String> ignoredItems = new ArrayList<>();
 
 	@Getter(AccessLevel.PACKAGE)
@@ -164,6 +151,7 @@ public class LootTrackerPlugin extends Plugin
 	@Subscribe
 	public void onSessionOpen(SessionOpen sessionOpen)
 	{
+
 		AccountSession accountSession = sessionManager.getAccountSession();
 		if (accountSession.getUuid() != null)
 		{
@@ -172,6 +160,29 @@ public class LootTrackerPlugin extends Plugin
 		else
 		{
 			lootTrackerClient = null;
+		}
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		GameState state = event.getGameState();
+		AccountSession accountSession = sessionManager.getAccountSession();
+		if (state == GameState.LOGGED_IN)
+		{
+			// Check if the session UUID has changed
+			if (!Objects.equals(accountSession.getUuid(), lastUUID))
+			{
+				if (accountSession.getUuid() != null)
+				{
+					lootTrackerClient = new LootTrackerClient(accountSession.getUuid());
+				}
+				else
+				{
+					lootTrackerClient = null;
+				}
+				lastUUID = accountSession.getUuid();
+			}
 		}
 	}
 
@@ -194,6 +205,7 @@ public class LootTrackerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
+
 		ignoredItems = Text.fromCSV(config.getIgnoredItems());
 		panel = new LootTrackerPanel(this, itemManager, config);
 		spriteManager.getSpriteAsync(SpriteID.TAB_INVENTORY, 0, panel::loadHeaderIcon);
