@@ -106,12 +106,12 @@ public class LootTrackerPlugin extends Plugin
 	@Inject
 	private ScheduledExecutorService executor;
 
+	private boolean setUp = false;
+	private String lastUsername = "";
+
 	private LootTrackerPanel panel;
 	private NavigationButton navButton;
 	private String eventType;
-
-
-	private UUID lastUUID;
 
 	private List<String> ignoredItems = new ArrayList<>();
 
@@ -169,25 +169,44 @@ public class LootTrackerPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged event)
+	public void onGameStateChanged(GameStateChanged event) throws Exception
 	{
+
 		GameState state = event.getGameState();
-		AccountSession accountSession = sessionManager.getAccountSession();
-		if (state == GameState.LOGGED_IN)
+
+		if (state == GameState.LOGGED_IN && !client.getUsername().equals(lastUsername) && !setUp)
 		{
-			// Check if the session UUID has changed
-			if (!Objects.equals(accountSession.getUuid(), lastUUID))
-			{
-				if (accountSession.getUuid() != null)
-				{
-					lootTrackerClient = new LootTrackerClient(accountSession.getUuid());
-				}
-				else
-				{
-					lootTrackerClient = null;
-				}
-				lastUUID = accountSession.getUuid();
-			}
+
+			/*clientThread.invokeLater(() ->
+					{
+						if (client.getGameState() != GameState.LOGGED_IN)
+						{
+							log.debug("loottracker giving up, not signed in anymore");
+							return true;
+						}
+
+						AccountSession accountSession = sessionManager.getAccountSession();
+						if (client.getUsername() == null) {
+							log.debug("loottracker didn't get username, trying again...");
+							return false;
+						}
+						if (lastUsername == null || !Objects.equals(client.getUsername(), lastUsername))
+						{
+							log.debug("loottracker got new username");
+							lootTrackerClient = null;
+							lootTrackerClient = new LootTrackerClient(accountSession.getUuid());
+							lastUsername = client.getUsername();
+						}
+						else
+						{
+							log.debug("loottracker got username, didn't change");
+						}
+						return true;
+					}
+			);*/
+
+			startUp();
+
 		}
 	}
 
@@ -210,7 +229,8 @@ public class LootTrackerPlugin extends Plugin
 	@Override
 	protected void startUp() throws Exception
 	{
-
+		setUp = true;
+		lastUsername = client.getUsername();
 		ignoredItems = Text.fromCSV(config.getIgnoredItems());
 		panel = new LootTrackerPanel(this, itemManager, config);
 		spriteManager.getSpriteAsync(SpriteID.TAB_INVENTORY, 0, panel::loadHeaderIcon);
@@ -227,6 +247,7 @@ public class LootTrackerPlugin extends Plugin
 		clientToolbar.addNavigation(navButton);
 
 		AccountSession accountSession = sessionManager.getAccountSession();
+
 		if (accountSession != null)
 		{
 			lootTrackerClient = new LootTrackerClient(accountSession.getUuid());
@@ -270,6 +291,7 @@ public class LootTrackerPlugin extends Plugin
 				return true;
 			});
 		}
+
 	}
 
 	@Override
