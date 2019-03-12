@@ -114,6 +114,9 @@ public class LootTrackerPlugin extends Plugin
 	private NavigationButton navButton;
 	private String eventType;
 
+
+	private UUID lastUUID;
+
 	private List<String> ignoredItems = new ArrayList<>();
 
 	@Getter(AccessLevel.PACKAGE)
@@ -179,7 +182,6 @@ public class LootTrackerPlugin extends Plugin
 			lastUsername = client.getUsername();
 
 			panel.resetRecords();
-
 		}
 	}
 
@@ -204,6 +206,7 @@ public class LootTrackerPlugin extends Plugin
 	{
 		setUp = true;
 		lastUsername = client.getUsername();
+
 		ignoredItems = Text.fromCSV(config.getIgnoredItems());
 		panel = new LootTrackerPanel(this, itemManager, config);
 		spriteManager.getSpriteAsync(SpriteID.TAB_INVENTORY, 0, panel::loadHeaderIcon);
