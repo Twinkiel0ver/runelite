@@ -26,16 +26,6 @@
 package net.runelite.client.plugins.loottracker;
 
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.swing.SwingUtilities;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +33,8 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ConfigChanged;
-import net.runelite.client.events.SessionClose;
-import net.runelite.client.events.SessionOpen;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.WidgetLoaded;
-import net.runelite.api.events.*;
 import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
@@ -55,6 +43,8 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.events.PlayerLootReceived;
+import net.runelite.client.events.SessionClose;
+import net.runelite.client.events.SessionOpen;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.game.SpriteManager;
@@ -68,6 +58,17 @@ import net.runelite.http.api.loottracker.GameItem;
 import net.runelite.http.api.loottracker.LootRecord;
 import net.runelite.http.api.loottracker.LootRecordType;
 import net.runelite.http.api.loottracker.LootTrackerClient;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @PluginDescriptor(
 	name = "Loot Tracker",
@@ -172,40 +173,12 @@ public class LootTrackerPlugin extends Plugin
 	public void onGameStateChanged(GameStateChanged event) throws Exception
 	{
 
-		GameState state = event.getGameState();
-
-		if (state == GameState.LOGGED_IN && !client.getUsername().equals(lastUsername) && !setUp)
+		if (event.getGameState() == GameState.LOGGED_IN && !client.getUsername().equals(lastUsername) && setUp)
 		{
 
-			/*clientThread.invokeLater(() ->
-					{
-						if (client.getGameState() != GameState.LOGGED_IN)
-						{
-							log.debug("loottracker giving up, not signed in anymore");
-							return true;
-						}
+			lastUsername = client.getUsername();
 
-						AccountSession accountSession = sessionManager.getAccountSession();
-						if (client.getUsername() == null) {
-							log.debug("loottracker didn't get username, trying again...");
-							return false;
-						}
-						if (lastUsername == null || !Objects.equals(client.getUsername(), lastUsername))
-						{
-							log.debug("loottracker got new username");
-							lootTrackerClient = null;
-							lootTrackerClient = new LootTrackerClient(accountSession.getUuid());
-							lastUsername = client.getUsername();
-						}
-						else
-						{
-							log.debug("loottracker got username, didn't change");
-						}
-						return true;
-					}
-			);*/
-
-			startUp();
+			panel.resetRecords();
 
 		}
 	}

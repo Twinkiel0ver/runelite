@@ -540,7 +540,15 @@ class LootTrackerPanel extends PluginPanel
 		overallKillsLabel.setText(htmlLabel("Total count: ", overallKills));
 		overallGpLabel.setText(htmlLabel("Total value: ", overallGp));
 	}
-
+	/**
+	 * Removes all elements from records when logging into new account
+	 */
+	void resetRecords()
+	{
+		records.clear();
+		boxes.clear();
+		rebuild();
+	}
 	private static String htmlLabel(String key, long value)
 	{
 		final String valueStr = StackFormatter.quantityToStackSize(value);
